@@ -141,6 +141,15 @@ class QuizExplanation extends StatelessWidget {
     return Container(
       height: 30,
       margin: EdgeInsets.only(left: 2),
+      // child: Chip(
+      //   label: Text(text),
+      //   labelStyle: TextStyle(
+      //     fontSize: 11.0,
+      //     color: Colors.white,
+      //     fontWeight: FontWeight.w600,
+      //   ),
+      //   backgroundColor: color,
+      // ),
       child: ElevatedButton(
         child: Text(tag.tagName),
         style: ElevatedButton.styleFrom(
@@ -174,6 +183,16 @@ class QuizExplanation extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+        // materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        // padding: EdgeInsets.symmetric(
+        //   vertical: 0.0,
+        //   horizontal: 0.0,
+        // ),
+        // labelStyle: TextStyle(
+        //   fontSize: 9.0,
+        //   color: Colors.white,
+        //   fontWeight: FontWeight.w600,
+        // ),
         backgroundColor: color,
       ),
     );
@@ -217,156 +236,34 @@ class QuizExplanation extends StatelessWidget {
   }
 
   Widget _buildMemo() {
-    // Question.explanation の各要素を provider ごとにタブ表示する。
-    return _ProviderTabbedMemo(_question.explanation);
-  }
-
-  Widget _buildExplanation(Map<String, dynamic> explanation) {
-    return buildExplanationItem(explanation);
-  }
-}
-
-/// explanation の 1 要素を種類（link / image / text）に応じて描画する共通関数。
-Widget buildExplanationItem(Map<String, dynamic> explanation) {
-  if (explanation.containsKey("link")) {
-    return Padding(
-        padding:
-            const EdgeInsets.only(left: 8.0, right: 8.0, top: 2.0, bottom: 4.0),
-        child: QuizLink(
-            explanation["link"].toString(), explanation["url"].toString()));
-  } else if (explanation.containsKey("image_path")) {
-    return Padding(
-        padding: EdgeInsets.only(top: 15.0),
-        child: QuizImage(explanation["image_path"]));
-  } else {
-    return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-        child: Align(
-            alignment: Alignment.centerLeft,
-            child: QuizMarkdown(explanation["text"])));
-  }
-}
-
-/// Question.explanation の各要素を provider の値ごとにグループ化し、
-/// スワイプ＆スクロール可能なタブで表示するメモウィジェット。
-class _ProviderTabbedMemo extends StatefulWidget {
-  final List<dynamic> explanations;
-  const _ProviderTabbedMemo(this.explanations);
-
-  @override
-  State<_ProviderTabbedMemo> createState() => _ProviderTabbedMemoState();
-}
-
-class _ProviderTabbedMemoState extends State<_ProviderTabbedMemo>
-    with SingleTickerProviderStateMixin {
-  // provider 未設定の要素をまとめるためのキー。
-  static const String _defaultProviderKey = "__default__";
-
-  TabController _tabController;
-  List<String> _providers;
-  Map<String, List<dynamic>> _grouped;
-
-  @override
-  void initState() {
-    super.initState();
-    _groupByProvider();
-    _tabController = TabController(length: _providers.length, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  // 出現順を保ったまま provider ごとにグループ化する。
-  void _groupByProvider() {
-    final Map<String, List<dynamic>> grouped = {};
-    final List<String> order = [];
-    for (final explanation in widget.explanations) {
-      String key = _defaultProviderKey;
-      if (explanation is Map &&
-          explanation["provider"] != null &&
-          explanation["provider"].toString().isNotEmpty) {
-        key = explanation["provider"].toString();
-      }
-      if (!grouped.containsKey(key)) {
-        grouped[key] = [];
-        order.add(key);
-      }
-      grouped[key].add(explanation);
-    }
-    _grouped = grouped;
-    _providers = order;
-  }
-
-  String _tabLabel(String providerKey) {
-    return providerKey == _defaultProviderKey ? "共通" : providerKey;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // provider が 1 種類以下なら従来通りタブなしで表示する。
-    if (_providers.length <= 1) {
-      final key = _providers.isEmpty ? _defaultProviderKey : _providers.first;
-      return _buildMemoCard(_grouped[key] ?? widget.explanations);
-    }
-
-    return Card(
-      color: CARD_COLOR,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          // 横スクロール可能・タップで切替できるタブバー。
-          TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            labelColor: Colors.teal[800],
-            unselectedLabelColor: Colors.teal[300],
-            indicatorColor: Colors.teal[700],
-            labelStyle: TextStyle(
-              fontSize: 13.0,
-              fontWeight: FontWeight.bold,
-            ),
-            tabs: _providers.map((p) => Tab(text: _tabLabel(p))).toList(),
-          ),
-          // スワイプで切替可能・各タブ内は縦スクロール可能なタブビュー。
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.6,
-            ),
-            child: TabBarView(
-              controller: _tabController,
-              physics: const BouncingScrollPhysics(),
-              children: _providers.map((p) {
-                final items = _grouped[p];
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10.0, vertical: 10.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      ...items.map((e) => buildExplanationItem(e))
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // タブなし（provider が 1 種類以下）の場合の従来表示。
-  Widget _buildMemoCard(List<dynamic> explanations) {
     return Card(
         color: CARD_COLOR,
         child: Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
             child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-              ...explanations.map((e) => buildExplanationItem(e))
+              ..._question.explanation
+                  .map((explanation) => _buildExplanation(explanation))
             ])));
+  }
+
+  Widget _buildExplanation(Map<String, dynamic> explanation) {
+    if (explanation.containsKey("link")) {
+      return Padding(
+          padding: const EdgeInsets.only(
+              left: 8.0, right: 8.0, top: 2.0, bottom: 4.0),
+          child: QuizLink(
+              explanation["link"].toString(), explanation["url"].toString()));
+    } else if (explanation.containsKey("image_path")) {
+      return Padding(
+          padding: EdgeInsets.only(top: 15.0),
+          child: QuizImage(explanation["image_path"]));
+    } else {
+      return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          child: Align(
+              alignment: Alignment.centerLeft,
+              child: QuizMarkdown(explanation["text"])));
+    }
   }
 }
