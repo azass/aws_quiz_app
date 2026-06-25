@@ -227,13 +227,20 @@ class _DailyRecordPageState extends State<DailyRecordPage>
                               fontWeight: FontWeight.bold,
                               color: _baseFontColor))),
                   Container(
-                    child: Text((question.judgment) ? "正解" : "❌",
-                        style: TextStyle(
-                            fontSize: MediaQuery.of(context).size.width > 600
-                                ? 16.0
-                                : 11.0,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white)),
+                    child: (question.judgment)
+                        ? Text("正解",
+                            style: TextStyle(
+                                fontSize:
+                                    MediaQuery.of(context).size.width > 600
+                                        ? 16.0
+                                        : 11.0,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white))
+                        : Icon(Icons.close,
+                            size: MediaQuery.of(context).size.width > 600
+                                ? 20.0
+                                : 14.0,
+                            color: Colors.white),
                   ),
                   Container(
                       padding: EdgeInsets.all(0.0),
