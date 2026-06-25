@@ -218,7 +218,12 @@ class QuizExplanation extends StatelessWidget {
 
   Widget _buildMemo() {
     // Question.explanation の各要素を provider ごとにタブ表示する。
-    return _ProviderTabbedMemo(_question.explanation);
+    // questId を Key にすることで、問題切替時に State を作り直し、
+    // 共通タブが選択された状態で再表示されるようにする。
+    return _ProviderTabbedMemo(
+      _question.explanation,
+      key: ValueKey(_question.questId),
+    );
   }
 
   Widget _buildExplanation(Map<String, dynamic> explanation) {
@@ -227,31 +232,38 @@ class QuizExplanation extends StatelessWidget {
 }
 
 /// explanation の 1 要素を種類（link / image / text）に応じて描画する共通関数。
+/// 要素間に間隔を空けるため、外側に下マージンを付与する。
 Widget buildExplanationItem(Map<String, dynamic> explanation) {
+  Widget child;
   if (explanation.containsKey("link")) {
-    return Padding(
+    child = Padding(
         padding:
             const EdgeInsets.only(left: 8.0, right: 8.0, top: 2.0, bottom: 4.0),
         child: QuizLink(
             explanation["link"].toString(), explanation["url"].toString()));
   } else if (explanation.containsKey("image_path")) {
-    return Padding(
+    child = Padding(
         padding: EdgeInsets.only(top: 15.0),
         child: QuizImage(explanation["image_path"]));
   } else {
-    return Padding(
+    child = Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
         child: Align(
             alignment: Alignment.centerLeft,
             child: QuizMarkdown(explanation["text"])));
   }
+  // 要素間の間隔。
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12.0),
+    child: child,
+  );
 }
 
 /// Question.explanation の各要素を provider の値ごとにグループ化し、
 /// スワイプ＆スクロール可能なタブで表示するメモウィジェット。
 class _ProviderTabbedMemo extends StatefulWidget {
   final List<dynamic> explanations;
-  const _ProviderTabbedMemo(this.explanations);
+  const _ProviderTabbedMemo(this.explanations, {Key key}) : super(key: key);
 
   @override
   State<_ProviderTabbedMemo> createState() => _ProviderTabbedMemoState();
@@ -262,6 +274,16 @@ class _ProviderTabbedMemoState extends State<_ProviderTabbedMemo>
   // provider 未設定の要素をまとめるためのキー。
   static const String _defaultProviderKey = "__default__";
 
+  // タブの表示順序。共通（未設定）を先頭に固定し、以降この順に並べる。
+  // ここに無い provider は末尾に出現順で並べる。
+  static const List<String> _providerOrder = [
+    _defaultProviderKey,
+    "agent",
+    "gemini",
+    "openai",
+    "bedrock",
+  ];
+
   TabController _tabController;
   List<String> _providers;
   Map<String, List<dynamic>> _grouped;
@@ -270,7 +292,12 @@ class _ProviderTabbedMemoState extends State<_ProviderTabbedMemo>
   void initState() {
     super.initState();
     _groupByProvider();
-    _tabController = TabController(length: _providers.length, vsync: this);
+    // 共通タブ（先頭）を初期表示にする。
+    _tabController = TabController(
+      length: _providers.length,
+      vsync: this,
+      initialIndex: 0,
+    );
   }
 
   @override
@@ -279,10 +306,10 @@ class _ProviderTabbedMemoState extends State<_ProviderTabbedMemo>
     super.dispose();
   }
 
-  // 出現順を保ったまま provider ごとにグループ化する。
+  // provider ごとにグループ化し、_providerOrder の順に並べる。
   void _groupByProvider() {
     final Map<String, List<dynamic>> grouped = {};
-    final List<String> order = [];
+    final List<String> seen = [];
     for (final explanation in widget.explanations) {
       String key = _defaultProviderKey;
       if (explanation is Map &&
@@ -292,10 +319,25 @@ class _ProviderTabbedMemoState extends State<_ProviderTabbedMemo>
       }
       if (!grouped.containsKey(key)) {
         grouped[key] = [];
-        order.add(key);
+        seen.add(key);
       }
       grouped[key].add(explanation);
     }
+
+    // 指定順序（共通, agent, gemini, openai, bedrock）に並べ替える。
+    // 指定外の provider は末尾に出現順で続ける。
+    final List<String> order = [];
+    for (final p in _providerOrder) {
+      if (grouped.containsKey(p)) {
+        order.add(p);
+      }
+    }
+    for (final p in seen) {
+      if (!order.contains(p)) {
+        order.add(p);
+      }
+    }
+
     _grouped = grouped;
     _providers = order;
   }
