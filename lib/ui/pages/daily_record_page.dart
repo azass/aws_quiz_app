@@ -238,9 +238,9 @@ class _DailyRecordPageState extends State<DailyRecordPage>
                                 color: Colors.white))
                         : Icon(Icons.close,
                             size: MediaQuery.of(context).size.width > 600
-                                ? 20.0
-                                : 14.0,
-                            color: Colors.white),
+                                ? 24.0
+                                : 18.0,
+                            color: Colors.red),
                   ),
                   Container(
                       padding: EdgeInsets.all(0.0),
