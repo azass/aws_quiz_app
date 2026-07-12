@@ -6,9 +6,13 @@ class Scoring {
   final String date;
   double avg_scoring;
   double avg_retention;
+  double avg_mastery;
   List<DailyScoring> dailyScorings;
   List<ScoringCount> scoringCounts;
   List<RetentionCount> retentionCounts;
+  List<RetentionCount> masteryCounts;
+  DueForecast dueForecast;
+  Quadrants quadrants;
 
   Scoring(this.examId, this.date, this.avg_scoring, this.dailyScorings);
   Scoring.fromMap(Map<String, dynamic> data)
@@ -16,9 +20,54 @@ class Scoring {
         date = data["date"],
         avg_scoring = data["avg_scoring"],
         avg_retention = data["avg_retention"],
+        avg_mastery =
+            data["avg_mastery"] != null ? data["avg_mastery"].toDouble() : 0.0,
         // dailyScorings = DailyScoring.fromData(data["daily_scorings"]),
         scoringCounts = ScoringCount.fromData(data["scoring_counts"]),
-        retentionCounts = RetentionCount.fromData(data["retention_counts"]);
+        retentionCounts = RetentionCount.fromData(data["retention_counts"]),
+        masteryCounts = data["mastery_counts"] != null
+            ? RetentionCount.fromData(data["mastery_counts"])
+            : null,
+        dueForecast = data["due_forecast"] != null
+            ? DueForecast.fromMap(data["due_forecast"])
+            : null,
+        quadrants =
+            data["quadrants"] != null ? Quadrants.fromMap(data["quadrants"]) : null;
+}
+
+/// 復習負荷予測（今後N日で halving_date が到来する問題数）。
+class DueForecast {
+  final int overdue;
+  final List<DueForecastDay> days;
+  DueForecast(this.overdue, this.days);
+  DueForecast.fromMap(Map<String, dynamic> data)
+      : overdue = data["overdue"],
+        days = data["days"]
+            .map<DueForecastDay>(
+                (item) => DueForecastDay(item["date"], item["count"]))
+            .toList();
+}
+
+class DueForecastDay {
+  final String date;
+  final int count;
+  DueForecastDay(this.date, this.count);
+}
+
+/// difficulty × retrievability の4象限（復習優先度）。
+class Quadrants {
+  final int danger; // 難しい×忘れかけ → 最優先
+  final int effort; // 易しい×忘れかけ → 軽く復習
+  final int fragile; // 難しい×維持中 → 油断注意
+  final int stable; // 易しい×維持中 → 放置可
+  final int unlearned; // 未学習
+  Quadrants(this.danger, this.effort, this.fragile, this.stable, this.unlearned);
+  Quadrants.fromMap(Map<String, dynamic> data)
+      : danger = data["danger"],
+        effort = data["effort"],
+        fragile = data["fragile"],
+        stable = data["stable"],
+        unlearned = data["unlearned"];
 }
 
 class DailyScoring {

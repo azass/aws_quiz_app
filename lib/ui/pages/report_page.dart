@@ -1,6 +1,7 @@
 import 'package:aws_quiz_app/models/report.dart';
 import 'package:aws_quiz_app/models/scoring.dart';
 import 'package:aws_quiz_app/models/tag.dart';
+import 'package:aws_quiz_app/ui/widgets/fsrs_dashboard.dart';
 import 'package:aws_quiz_app/ui/widgets/keyword_dialog.dart';
 import 'package:aws_quiz_app/ui/widgets/quiz_dashboard.dart';
 import 'package:aws_quiz_app/ui/widgets/scoring_board.dart';
@@ -66,8 +67,12 @@ class _ReportPageState extends State<ReportPage> {
                 child: SingleChildScrollView(
                     child: Padding(
                   padding: const EdgeInsets.all(4.0),
-                  child: TagScoringTable(
-                      widget.report.exam, widget.report.scoringTableItems),
+                  child: Column(children: <Widget>[
+                    FsrsDashboard(widget.report.scoring),
+                    SizedBox(height: 8.0),
+                    TagScoringTable(
+                        widget.report.exam, widget.report.scoringTableItems),
+                  ]),
                 )
                     // child: Column(
                     //   children: _buildRowList(context),
