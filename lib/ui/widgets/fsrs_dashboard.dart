@@ -129,7 +129,8 @@ class FsrsDashboard extends StatelessWidget {
                   labelStyle:
                       TextStyle(fontSize: 8.0, color: Colors.white70),
                   majorGridLines: MajorGridLines(width: 0),
-                  labelIntervalType: CategoryAxisLabelIntervalType.auto),
+                  // 14日分のラベルが混み合うため2日おきに表示
+                  interval: 2),
               primaryYAxis: NumericAxis(
                   labelStyle:
                       TextStyle(fontSize: 8.0, color: Colors.white70),
