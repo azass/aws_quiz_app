@@ -485,6 +485,7 @@ class QuizPageState extends State<QuizPage> with WidgetsBindingObserver {
   }
 
   void _setupFab() {
+    if (_question == null) return;
     icons[4].setupColor(_question.learningNote.length > 0);
     // icons[3].setupColor(_visibleDashboad);
     icons[5].setupColor(_question.isBug);

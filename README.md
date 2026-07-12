@@ -15,3 +15,18 @@ For help getting started with Flutter, view our
 [online documentation](https://flutter.dev/docs), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
+Android実機インストール
+
+
+
+
+android/app/src/main/AndroidManifest.xml
+追記↓
+<uses-permission android:name="android.permission.INTERNET"/>
+
+APKビルド
+メニュー-Build-Flutter-Build APK
+
+インストール
+Terminal
+flutter install

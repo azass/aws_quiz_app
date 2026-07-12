@@ -25,7 +25,7 @@ class QuizBookState extends State<QuizBook> {
         margin: const EdgeInsets.all(5.0),
         child: Column(children: <Widget>[
           if (widget.readOnly ||
-              (widget.isAnswered && widget.question.newScoring != null))
+              (widget.isAnswered))
             Container(
                 height: h,
                 child: GridView.count(
