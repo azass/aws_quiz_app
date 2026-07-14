@@ -10,6 +10,11 @@ class TermScoringTable extends ScoringTable {
       : super(scoringTableItems);
 
   @override
+  double tagWidth(BuildContext context) {
+    return MediaQuery.of(context).size.width * 0.42;
+  }
+
+  @override
   onPressed(BuildContext context, ScoringTableItem item) {
     showTermView(context, tag.tagName, item.term);
   }

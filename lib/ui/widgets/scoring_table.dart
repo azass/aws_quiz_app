@@ -40,8 +40,19 @@ class _ScoringTableState extends State<ScoringTable> {
               label: Container(
                   width: MediaQuery.of(context).size.width * 0.4,
                   child: Padding(
-                      padding: const EdgeInsets.only(left: 15.0),
-                      child: Text(''))),
+                      padding: const EdgeInsets.only(left: 10.0),
+                      // 習熟度ヒートカラーの凡例（KnowhowMap と同デザイン）
+                      child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _legendChip("未定着", _heatColors[0]),
+                                _legendChip("学習中", _heatColors[2]),
+                                _legendChip("定着", _heatColors[4]),
+                                _legendChip("熟達", _heatColors[6]),
+                              ])))),
               onSort: (columnIndex, _) {
                 setState(() {
                   _currentSortColumn = columnIndex;
@@ -203,6 +214,14 @@ class _ScoringTableState extends State<ScoringTable> {
   }
 
   Widget buildTag(BuildContext context, ScoringTableItem item) {
+    // 習熟度(mastery)ヒートカラーをボタン背景に適用。
+    // データが無い(0)場合は従来の色にフォールバック。
+    final Color bg = item.avgMastery > 0
+        ? _masteryColor(item.avgMastery)
+        : widget.bgcolor(item);
+    // 明るい背景色では文字を黒にして可読性を確保する。
+    final Color fg =
+        bg.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
     return Container(
       height: 26,
       width: widget.tagWidth(context),
@@ -211,9 +230,9 @@ class _ScoringTableState extends State<ScoringTable> {
           child: ElevatedButton(
               child: Text(item.label),
               style: ElevatedButton.styleFrom(
-                textStyle: TextStyle(fontSize: 11.0, color: Colors.white),
-                primary: widget.bgcolor(item),
-                onPrimary: Colors.white,
+                textStyle: TextStyle(fontSize: 11.0),
+                primary: bg,
+                onPrimary: fg,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -225,5 +244,37 @@ class _ScoringTableState extends State<ScoringTable> {
 
   pressed(BuildContext context, ScoringTableItem item) {
     setState(() => widget.onPressed(context, item));
+  }
+
+  /// 凡例チップ（色四角＋ラベル）。KnowhowMap の Legend と同デザイン。
+  Widget _legendChip(String label, Color color) => Padding(
+      padding: EdgeInsets.only(right: 6.0),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 10.0, height: 10.5, color: color),
+        SizedBox(width: 3.0),
+        Text(label,
+            style: TextStyle(fontSize: 10.0, color: Colors.white)),
+      ]));
+
+  /// 習熟度ヒートカラー（低 → 高）。凡例と _masteryColor で共有する。
+  static const List<Color> _heatColors = [
+    Color(0xFFE57373), // <20  未定着
+    Color(0xFFFF8A65), // <40
+    Color(0xFFFFB74D), // <60
+    Color(0xFFFFD54F), // <80  学習中
+    Color(0xFFAED581), // <100
+    Color(0xFF81C784), // <120 定着
+    Color(0xFF4DB6AC), // 120+ 熟達
+  ];
+
+  /// mastery(0〜120+) をヒートカラーに変換する。
+  Color _masteryColor(double mastery) {
+    if (mastery < 20) return _heatColors[0];
+    if (mastery < 40) return _heatColors[1];
+    if (mastery < 60) return _heatColors[2];
+    if (mastery < 80) return _heatColors[3];
+    if (mastery < 100) return _heatColors[4];
+    if (mastery < 120) return _heatColors[5];
+    return _heatColors[6];
   }
 }

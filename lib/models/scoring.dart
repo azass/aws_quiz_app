@@ -13,6 +13,7 @@ class Scoring {
   List<RetentionCount> masteryCounts;
   DueForecast dueForecast;
   Quadrants quadrants;
+  List<QuestionStat> questionStats;
 
   Scoring(this.examId, this.date, this.avg_scoring, this.dailyScorings);
   Scoring.fromMap(Map<String, dynamic> data)
@@ -32,16 +33,54 @@ class Scoring {
             ? DueForecast.fromMap(data["due_forecast"])
             : null,
         quadrants =
-            data["quadrants"] != null ? Quadrants.fromMap(data["quadrants"]) : null;
+            data["quadrants"] != null ? Quadrants.fromMap(data["quadrants"]) : null,
+        questionStats = data["question_stats"] != null
+            ? QuestionStat.fromList(data["question_stats"])
+            : null;
+}
+
+/// 問題別の分析値（分析タブの一覧用）。
+class QuestionStat {
+  final String questId;
+  final int scoring;
+  final double retention;
+  final double mastery;
+  final double stability;
+  final double difficulty;
+  final String halvingDate;
+
+  QuestionStat.fromMap(Map<String, dynamic> data)
+      : questId = data['quest_id'] ?? '',
+        scoring = data['scoring'] != null ? data['scoring'].toInt() : 0,
+        retention =
+            data['retention'] != null ? data['retention'].toDouble() : 0.0,
+        mastery = data['mastery'] != null ? data['mastery'].toDouble() : 0.0,
+        stability =
+            data['stability'] != null ? data['stability'].toDouble() : 0.0,
+        difficulty =
+            data['difficulty'] != null ? data['difficulty'].toDouble() : 0.0,
+        halvingDate = data['halving_date'] ?? '';
+
+  static List<QuestionStat> fromList(List<dynamic> data) {
+    return data
+        .map<QuestionStat>((item) => QuestionStat.fromMap(item))
+        .toList();
+  }
 }
 
 /// 復習負荷予測（今後N日で halving_date が到来する問題数）。
 class DueForecast {
   final int overdue;
+  final int overdueDays; // 延べ超過日数（無駄にした時間）
+  final double lostRetention; // 超過による定着ロス（pt）
   final List<DueForecastDay> days;
-  DueForecast(this.overdue, this.days);
+  DueForecast(this.overdue, this.overdueDays, this.lostRetention, this.days);
   DueForecast.fromMap(Map<String, dynamic> data)
       : overdue = data["overdue"],
+        overdueDays = data["overdue_days"] ?? 0,
+        lostRetention = data["lost_retention"] != null
+            ? data["lost_retention"].toDouble()
+            : 0.0,
         days = data["days"]
             .map<DueForecastDay>(
                 (item) => DueForecastDay(item["date"], item["count"]))
@@ -112,6 +151,7 @@ class ScoringTableItem {
   double correctAnswerRate;
   double completionRate;
   double avgRetention;
+  double avgMastery = 0.0;
   Tag tag;
   Term term;
 
@@ -120,6 +160,9 @@ class ScoringTableItem {
         label = data['tag_name'],
         sort = data['sort'],
         questionCount = data['question_count'],
+        avgMastery = data['tag_avg_mastery'] != null
+            ? data['tag_avg_mastery'].toDouble()
+            : 0.0,
         correctAnswerRate = data['execute_count'] == 0
             ? 0.0
             : (data['correct_count'] > data['execute_count'])
@@ -137,6 +180,8 @@ class ScoringTableItem {
         questionCount = data['question_count'],
         correctAnswerRate = data['correct_answer_rate'].toDouble(),
         avgRetention = data['avg_retention'].toDouble(),
+        avgMastery =
+            data['avg_mastery'] != null ? data['avg_mastery'].toDouble() : 0.0,
         term = Term.fromMap(data);
 
   ScoringTableItem.fromData(Map<String, dynamic> data)

@@ -12,6 +12,7 @@ import 'package:aws_quiz_app/models/word.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:aws_quiz_app/models/knowhow_note.dart';
 
 const String baseUrl =
     "https://avnrlm9jw7.execute-api.ap-northeast-1.amazonaws.com/awsquiz/dynamodbctrl";
@@ -151,7 +152,7 @@ void finishQuiz(String answerDate, int executedTime) async {
 Future<Report> getReport(String examId) async {
   http.Response res =
       await http.get(Uri.parse(baseApi + "report?exam_id=$examId"));
-  String jso = res.body;
+  String jso = utf8.decode(res.bodyBytes);
   print(jso);
   Map<String, dynamic> result = json.decode(jso);
   // List items = result['items'];
@@ -163,7 +164,7 @@ Future<Report> getReport(String examId) async {
 Future<Report> getReportByTag(Exam exam, Tag tag) async {
   http.Response res = await http.get(Uri.parse(baseApi +
       "report?exam_id=${exam.examId}&provider=${tag.provider}&tag_no=${tag.tagNo}"));
-  String jso = res.body;
+  String jso = utf8.decode(res.bodyBytes);
   Map<String, dynamic> result = json.decode(jso);
   return Report.from(exam, tag, result);
 }
@@ -249,7 +250,7 @@ void updatePriority(String questId, double priority) async {
 Future<List<Word>> getWords(String questId) async {
   http.Response res =
       await http.get(Uri.parse(baseApi + "words?quest_id=$questId"));
-  String jso = res.body;
+  String jso = utf8.decode(res.bodyBytes);
   List<Map<String, dynamic>> words =
       List<Map<String, dynamic>>.from(json.decode(jso));
   return Word.fromData(questId, words);
@@ -275,7 +276,7 @@ Future<Map<String, DailyRecord>> getDailyRecords(
   String payload = JsonEncoder().convert(_payload);
 
   http.Response res = await http.post(Uri.parse(baseUrl), body: payload);
-  String jso = res.body;
+  String jso = utf8.decode(res.bodyBytes);
   if (jso == null) {
     return {};
   }
@@ -302,7 +303,7 @@ Future<List<Question>> searchDayHistory(
   _payload["Args"] = _args;
   String payload = JsonEncoder().convert(_payload);
   http.Response res = await http.post(Uri.parse(baseUrl), body: payload);
-  String jso = res.body;
+  String jso = utf8.decode(res.bodyBytes);
   List<Map<String, dynamic>> questions =
       List<Map<String, dynamic>>.from(json.decode(jso));
   return Question.fromHistoryData(questions);
@@ -315,7 +316,7 @@ Future<List<Question>> searchAnswerHistories(String questId) async {
   _payload["Args"] = _args;
   String payload = JsonEncoder().convert(_payload);
   http.Response res = await http.post(Uri.parse(baseUrl), body: payload);
-  String jso = res.body;
+  String jso = utf8.decode(res.bodyBytes);
   List<Map<String, dynamic>> questions =
       List<Map<String, dynamic>>.from(json.decode(jso));
   return Question.fromHistoryData(questions);
@@ -323,7 +324,7 @@ Future<List<Question>> searchAnswerHistories(String questId) async {
 
 Future<List<CloudProvider>> getCloudProviders() async {
   http.Response res = await http.get(Uri.parse(baseApi + "get_providers"));
-  String jso = res.body;
+  String jso = utf8.decode(res.bodyBytes);
   List<Map<String, dynamic>> providers =
       List<Map<String, dynamic>>.from(json.decode(jso));
   return CloudProvider.fromData(providers);
@@ -332,7 +333,7 @@ Future<List<CloudProvider>> getCloudProviders() async {
 Future<List<Term>> getTerms(Tag tag) async {
   http.Response res = await http.get(Uri.parse(
       baseApi + "keywords?provider=${tag.provider}&tag_no=${tag.tagNo}"));
-  String jso = res.body;
+  String jso = utf8.decode(res.bodyBytes);
   List<Map<String, dynamic>> terms =
       List<Map<String, dynamic>>.from(json.decode(jso));
   return Term.fromData(terms);
@@ -366,7 +367,7 @@ Future<Map<String, dynamic>> updateRetention(String questId) async {
   String payload = JsonEncoder().convert(_payload);
   http.Response res =
       await http.put(Uri.parse(baseApi + "retention"), body: payload);
-  String jso = res.body;
+  String jso = utf8.decode(res.bodyBytes);
   Map<String, dynamic> result = json.decode(jso);
   return result;
 }
@@ -380,4 +381,25 @@ void updateAnswerNote(String testId, String questId, String answerNote) async {
   _payload["Args"] = _args;
   String payload = JsonEncoder().convert(_payload);
   await http.post(Uri.parse(baseUrl), body: payload);
+}
+
+Future<List<KnowhowNote>> getKnowhowNotes(String examId) async {
+  http.Response res =
+  await http.get(Uri.parse(baseApi + "knowhow?exam_id=$examId"));
+  // 日本語を含むため bodyBytes を明示的に UTF-8 デコードする
+  String jso = utf8.decode(res.bodyBytes);
+  dynamic decoded = json.decode(jso);
+  // API Gateway 統合方式により、配列が直接返る場合と
+  // {statusCode, body} でラップされて返る場合の両方に対応する。
+  List<dynamic> list;
+  if (decoded is List) {
+    list = decoded;
+  } else if (decoded is Map && decoded['body'] != null) {
+    dynamic body = decoded['body'];
+    // body が JSON 文字列の場合はもう一段デコードする
+    list = body is String ? json.decode(body) : body;
+  } else {
+    list = [];
+  }
+  return KnowhowNote.fromList(list);
 }

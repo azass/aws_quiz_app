@@ -1,7 +1,11 @@
+import 'package:aws_quiz_app/models/knowhow_note.dart';
 import 'package:aws_quiz_app/models/report.dart';
 import 'package:aws_quiz_app/models/scoring.dart';
 import 'package:aws_quiz_app/models/tag.dart';
+import 'package:aws_quiz_app/ui/pages/knowhow_notes_page.dart';
+import 'package:aws_quiz_app/resources/api_provider.dart';
 import 'package:aws_quiz_app/ui/widgets/fsrs_dashboard.dart';
+import 'package:aws_quiz_app/ui/widgets/question_stats_table.dart';
 import 'package:aws_quiz_app/ui/widgets/keyword_dialog.dart';
 import 'package:aws_quiz_app/ui/widgets/quiz_dashboard.dart';
 import 'package:aws_quiz_app/ui/widgets/scoring_board.dart';
@@ -22,6 +26,7 @@ class ReportPage extends StatefulWidget {
 
 class _ReportPageState extends State<ReportPage> {
   int _currentSortColumn = 0;
+  Future<List<KnowhowNote>> _knowhowFuture;
   bool _isAscending = true;
 
   @override
@@ -32,58 +37,104 @@ class _ReportPageState extends State<ReportPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Report'),
-        elevation: 0,
-      ),
-      body: Container(
-        color: Colors.blueGrey[900],
-        height: double.infinity,
-        width: double.infinity,
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Report'),
+          elevation: 0,
+          bottom: TabBar(
+            labelStyle: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold),
+            tabs: [
+              Tab(text: 'レポート'),
+              Tab(text: '分析'),
+              Tab(text: 'つまずき集'),
+            ],
+          ),
+        ),
+        body: Container(
+          color: Colors.blueGrey[900],
+          height: double.infinity,
+          width: double.infinity,
+          child: TabBarView(
             children: <Widget>[
-              SizedBox(
-                  width: double.infinity,
-                  child: Text(
-                    widget.report.exam.examName,
-                    textAlign: TextAlign.left,
-                    style: TextStyle(
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white60),
-                  )),
-              SizedBox(height: 10.0),
-              Column(children: <Widget>[
-                ScoringBoard(widget.report.scoring),
-                // Dashboard(report.exam)
-              ]),
-              SizedBox(height: 6),
-              Expanded(
-                // height: double.infinity,
-                child: SingleChildScrollView(
-                    child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Column(children: <Widget>[
-                    FsrsDashboard(widget.report.scoring),
-                    SizedBox(height: 8.0),
-                    TagScoringTable(
-                        widget.report.exam, widget.report.scoringTableItems),
-                  ]),
-                )
-                    // child: Column(
-                    //   children: _buildRowList(context),
-                    // ),
-                    ),
-              ),
-              SizedBox(height: 10),
+              _buildReportTab(),
+              _buildAnalysisTab(),
+              _buildKnowhowTab(),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // タブ1: 従来のレポート（成績ボード＋タグ別テーブル）
+  Widget _buildReportTab() {
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          SizedBox(
+              width: double.infinity,
+              child: Text(
+                widget.report.exam.examName,
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white60),
+              )),
+          SizedBox(height: 10.0),
+          ScoringBoard(widget.report.scoring),
+          SizedBox(height: 6),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: TagScoringTable(
+                    widget.report.exam, widget.report.scoringTableItems),
+              ),
+            ),
+          ),
+          SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+
+  // タブ2: FSRS 分析ダッシュボード
+  Widget _buildAnalysisTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(10.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          FsrsDashboard(widget.report.scoring),
+          SizedBox(height: 10.0),
+          QuestionStatsTable(widget.report.scoring.questionStats ?? []),
+        ],
+      ),
+    );
+  }
+
+  // タブ3: つまずきノウハウ集（初回表示時に取得）
+  Widget _buildKnowhowTab() {
+    _knowhowFuture ??= getKnowhowNotes(widget.report.exam.examId);
+    return FutureBuilder<List<KnowhowNote>>(
+      future: _knowhowFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+              child: Text('ノウハウの取得に失敗しました',
+                  style: TextStyle(fontSize: 12.0, color: Colors.white54)));
+        }
+        return KnowhowNotesView(
+            examName: widget.report.exam.examName, notes: snapshot.data);
+      },
     );
   }
 

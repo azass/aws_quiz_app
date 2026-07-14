@@ -22,7 +22,7 @@ class ScoringBoard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         margin: const EdgeInsets.only(
-            top: 20.0, left: 5.0, bottom: 20.0, right: 5.0),
+            top: 10.0, left: 5.0, bottom: 10.0, right: 5.0),
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 10.0),
           child: Row(

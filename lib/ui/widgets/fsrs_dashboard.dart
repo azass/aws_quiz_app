@@ -69,7 +69,8 @@ class FsrsDashboard extends StatelessWidget {
             padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 10.0),
             decoration: BoxDecoration(
                 color: Colors.blueGrey[800],
-                border: Border(left: BorderSide(color: color, width: 4.0)),
+                // 非一様Border(left)とborderRadiusは併用不可のため一様枠線にする
+                border: Border.all(color: color, width: 1.5),
                 borderRadius: BorderRadius.circular(4.0)),
             child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -114,12 +115,20 @@ class FsrsDashboard extends StatelessWidget {
               decoration: BoxDecoration(
                   color: Colors.red[400],
                   borderRadius: BorderRadius.circular(8.0)),
-              child: Text("期限切れ ${forecast.overdue}問",
+              child: Text(
+                  "期限切れ ${forecast.overdue}問・延べ超過 ${forecast.overdueDays}日",
                   style: TextStyle(
                       fontSize: 10.0,
                       fontWeight: FontWeight.bold,
                       color: Colors.white))),
       ]),
+      if (forecast.overdue > 0 && forecast.lostRetention > 0)
+        Padding(
+            padding: EdgeInsets.only(left: 4.0, top: 2.0),
+            child: Text(
+                "超過による定着ロス 約${forecast.lostRetention.toStringAsFixed(1)}pt"
+                "（最適日に復習していれば維持できた分）",
+                style: TextStyle(fontSize: 10.0, color: Colors.red[200]))),
       SizedBox(
           height: 140,
           child: SfCartesianChart(
